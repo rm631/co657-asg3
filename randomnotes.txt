@@ -1,0 +1,13 @@
+In the data table IDs do not go in linear order, it seems that insert ignore - while stopping duplicate values - doesnt prevent the db for increasing the value of any auto_increment fields (but this is completely fine for functionality)
+
+From the EA API 9 locations are grabbed for the great stour, one of them (usually in the db under locationID 8) is marked as inactive (or down or something..?) and hence actually returns no data. If it was suddenly to go back up the data should be added as expected.
+^THIS IS NOW DEALT WITH (anything marked as suspended in the status field will now be ignored in subscribe - it may be better to add it to the db and igore it everywhere else..?)
+
+
+For flood warning use this: https://environment.data.gov.uk/flood-monitoring/id/floodAreas?lat=51.2802&long=1.0789&dist=20
+Grab lat/long from db then use for jquery .get (test the area size to see how it works etc.)
+
+
+For locationID: the devID and stationRef maybe used as the locationID, replacing the auto_increment if I can find the time to change it to this and look for potential problems well it
+
+(look here: https://stackoverflow.com/a/45176802) npm install chartjs-plugin-zoom --save (for the map zooming etc.)

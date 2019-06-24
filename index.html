@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+	<title>Great Stour Flood Reports</title>
+	<h1>Great Stour Flood Reports</h1>
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<!--Bootstrap cdn-->
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<!--Push notifications-->
+	<script src="push.js"></script>
+	<!-- https://flood-warning-information.service.gov.uk/river-and-sea-levels?location=ct2+8ll -->
+
+<script>
+
+	var xhttp = new XMLHttpRequest();
+	xhttp.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+			var arr = this.responseText;
+			var arrStrs = [];
+			arrStrs = arr.split(";");
+			for(var i = 0; i < arrStrs.length; i++) {
+				var stationRef = '';
+				var town = '';
+				var waterLevel = '';
+				var tmpArr = arrStrs[i].split(",");
+				for(var j = 0; j < tmpArr.length; j++) {
+					if(j == 0) {
+						stationRef = tmpArr[j];
+					} else if(j == 1) {
+						town = tmpArr[j];
+					} else if(j == 2) {
+						waterLevel = tmpArr[j];
+					} else {
+						waterLevel = tmpArr[j]; // a hardcoded response to the fact that one the towns also lists that it's in canterbury when the rest don't...
+					}
+				}
+				if(town !== "") {
+					$('#floodWarnings tbody').append(
+						"<tr>"
+							+"<td>"+stationRef +"</td>"
+							+"<td>"+town+"</td>"
+							+"<td>"+waterLevel+"</td>"
+						+"</tr>"
+					);
+				}
+				
+			}
+		}
+	};
+	xhttp.open("GET", "index.php", true);
+	xhttp.send();
+
+$(document).ready(function() {
+	/**
+	 *	get this https://environment.data.gov.uk/flood-monitoring/id/floods?lat=51.2802&long=1.0789&dist=7
+	 *	if it returns nothing, then nothing, otherwise flood warning or something
+	 */
+	
+	$.get("https://environment.data.gov.uk/flood-monitoring/id/floods", function(data) {//?lat=51.2802&long=1.0789&dist=7", function(data) {
+		var bool = true;
+		$.each(data, function(i, items) {
+			if(i === "items") {
+				$.each(items, function(j, item) {
+					
+				});
+			} else {
+				// no flood warnings in canterbury
+				if(bool) {
+					$("#floodHelp").append("No flood warnings for the Canterbury area");
+					bool = false;
+				}
+			}
+		});
+	});
+	
+	//Search function
+	$("#search").click(function() {
+
+		var postcode = $("#postcode").val();
+
+		var settings = {
+			"async": true,
+			"crossDomain": true,
+			"url": "https://us1.locationiq.com/v1/search.php?key=2c1dc605b01989&q=" + postcode + "&format=json",
+			"method": "GET"
+		}
+
+		$.ajax(settings).done(function(response) {
+
+			const radius = 2; //The radius in km
+
+			var lat = response[0]['lat'];
+			var lon = response[0]['lon'];
+
+			$.get("https://environment.data.gov.uk/flood-monitoring/id/stations?lat=" + lat + "&long=" + lon + "&dist=" + radius + "", function(data) {
+				alert(JSON.stringify(data));
+			}, "json");
+		});
+
+	});
+
+});
+</script>
+<style>
+
+body {text-align:center;}
+
+
+font-face {
+  font-family: myFirstFont;
+  src: url(sansation_bold.woff);
+  font-weight: bold;
+}
+
+#floodWarnings {
+	padding: 15vw;
+	border-collapse: collapse;
+	margin:0px auto; 
+	height: 100%; 
+	width: 100%;
+}
+#floodWarnings tr:nth-child(even){
+	background-color: #f2f2f2;
+}
+#floodWarnings tr {
+	height: 25px;
+}
+#floodWarnings tr:hover {
+	background-color: #FFC20A;
+}
+#floodWarnings, th, td { 
+    border: 1px solid black;
+}
+#floodWarnings th {
+    height: 50px;
+	background-color: #0C7BDC;
+    color: white;
+}
+#floodWarnings td {
+	text-align: centre;
+	overflow: auto;
+}
+ul {
+	list-style-type: none;
+	margin: 60;
+	padding: 60;
+	overflow: hidden;
+	background-color: #FFC20A;
+}
+
+li {
+  float: left;
+}
+
+li a {
+	display: block;
+	color: white;
+	text-align: center;
+	padding: 14px 16px;
+	text-decoration: none;
+}
+
+li a:hover:not(.active) {
+	background-color: #4CAF50;
+}
+
+.active {
+	background-color: #4CAF50;
+}
+
+
+
+table.center {
+	margin-left:auto; 
+	margin-right:auto;
+}
+
+.wrapper {overflow: auto;}
+
+main {margin-left: 4px;}
+
+@media screen and (min-width: 480px) {
+  #leftsidebar {width: 200px; float: left;}
+  #main {margin-left: 216px;}
+}
+
+ul li ul.dropdown {
+    list-style: none;
+    display: none;
+    z-index: 1000;
+    padding: 0;
+    margin: 0;
+}
+
+ul li:hover ul.dropdown {
+	display: block;
+}
+
+.nav-right {
+	float: right;
+}
+
+
+
+#testMode {
+	display: none;
+	max-height: 100%;
+	max-width: 100%;
+}
+
+.imgbox {
+	width:80vw;
+	height:80vh;
+}
+
+.img {
+	max-width:100%;
+	height:auto;
+	max-height:100%;
+}
+
+</style>
+</head>
+<body>
+
+<!-- https://environment.data.gov.uk/flood-monitoring/id/stations?riverName=Great+Stour dumps the great stour river data -->
+	<div class="container">
+		<div class="input-group">
+			<input type="text" id="postcode" class="form-control" placeholder="Enter your postcode...">
+			<span class="input-group-btn">
+				<button class="btn btn-default" id="search" type="button">Search</button>
+			</span>
+		</div>
+	</div>
+
+ <br></br>
+
+
+<!-- For the sake of not wasting time on a nav bar, for the time being we will be using the w3schools example found here: https://www.w3schools.com/css/css_navbar.asp -->
+<ul>
+	<li><a class="active" href="#">EA Flood Warnings</a></li>
+	<li><a href="mqtt.html">MQTT</a></li>
+		<li><a id="mapDropdown" href="map.html">map</a>
+			<ul class="dropdown">
+				<li><a href="map2.html">High Contrast</a></li>
+			</ul>
+		</li>
+	<li><a href="subscribe.html">Subscribe to alerts</a></li>
+	<li><a href="checkifonline.php">Check api status</a></li>
+
+	<div class="nav-right">
+		<li><a href="#">login</a></li>
+	</div>
+</ul>
+
+
+
+
+<!-- https://environment.data.gov.uk/flood-monitoring/id/stations?riverName=Great+Stour dumps the great stour river data -->
+<table class = "center" id="floodWarnings">
+	<thead>
+		<tr>
+			<th>Station Reference</th>
+			<th>Town</th>
+			<th>Water Level</th>
+		</tr>
+	</thead>
+	<tbody>
+	<!-- populated by jquery... -->
+	</tbody>
+</table>
+
+<script>
+	function flood() {
+		var x = document.getElementById("testMode").style.display = 'block';
+		var y = document.getElementById("floodHelp").style.display = 'none';
+		
+		//When message is received, desktop notification will be pushed, using push.js for this
+		Push.create("Flood Warning", { //the name of the flood station maybe?
+			body: "There is a new flood warning!", //where the flood warning would go
+			timeout: 5000, //how long the notification is shown
+			onClick: function () {
+				//goes to the site and closes the window when clicked
+				window.focus(); 
+				this.close();
+			}
+		});
+	}
+</script>
+
+<button type="button" onClick="flood()">Test Flood</button>
+
+<div id="floodHelp">
+	
+</div>
+
+<div id="testMode">
+	<p id="example">Flood example message: "Flood Alert: River levels have risen at the Buildwas river gauge as a result of heavy rainfall.  Consequently, the risk of flooding remains.  Flooding is affecting Low lying land and roads adjacent to the river from Shrewsbury to Upper Arley. Other locations that may be affected include Coalbrookdale, Ironbridge and Bridgnorth. The floodplain at Leighton starts to fill.   Flooding of properties is not forecast at this point.\nNo further rainfall is forecast.  We expect river levels to begin falling today 12/12/18. \nWe are closely monitoring the situation.  \nPlease plan driving routes to avoid low lying roads near rivers, which may be flooded.  \nThis message will be updated  by 14:00 on 12/12/18, or as the situation changes."</p>
+	<div class="imgbox">
+		<img class="img" src="images/flood_warnings.PNG">
+	</div>
+</div>
+
+</body>
+</html>

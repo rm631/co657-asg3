@@ -1,0 +1,45 @@
+<html>
+<body>
+	<ul>
+  <li><a href="index.html">EA Flood Warnings</a></li>
+  <li><a class="active" href="mqtt.html">MQTT</a></li>
+  <li><a href="map.html">Map</a></li>
+  <li><a href="#">task 7/8</a></li>
+</ul>
+
+ <style>
+ 	ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #FFC20A;
+}
+
+li {
+  float: left;
+}
+
+li a {
+  display: block;
+  color: white;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+li a:hover:not(.active) {
+  background-color: #4CAF50;
+}
+
+.active {
+  background-color: #4CAF50;
+}
+ </style>
+ </body>
+
+Develop an MQTT interface to report sensor  values from a number of locally deployed sensors - this must be done server side, not in the client's browser! <br><br>
+
+Values are grabbed from the MQTT subscribe function in subscribe.js (rename to server.js or something later), GRAB THESE VALUES FROM THE DB: check for a dev_id -> grab the locationID -> get the data -> display in browser (use the table on index, or just add this to index) <br><br>
+
+</html>

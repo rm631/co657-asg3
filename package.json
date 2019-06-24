@@ -1,0 +1,23 @@
+{
+  "name": "co657_asg3",
+  "version": "1.0.0",
+  "description": "In the data table IDs do not go in linear order, it seems that insert ignore - while stopping duplicate values - doesnt prevent the db for increasing the value of any auto_increment fields (but this is completely fine for functionality)",
+  "main": "subscribe.js",
+  "dependencies": {
+    "leaflet-geosearch": "^2.7.0",
+    "moment": "^2.22.2",
+    "mqtt": "^2.18.8",
+    "mysql": "^2.16.0",
+    "request": "^2.88.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://git.cs.kent.ac.uk/rm631/co657-asg3"
+  },
+  "author": "",
+  "license": "ISC"
+}

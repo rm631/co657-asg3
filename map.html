@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+	<title>Flood Map</title>
+	<meta name="viewport" content="initial-scale=1.0">
+	<meta charset="utf-8">
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.4/dist/leaflet.css"
+	integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
+	crossorigin=""/>
+	<script src="https://unpkg.com/leaflet@1.3.4/dist/leaflet.js"
+	integrity="sha512-nMMmRyTVoLYqjP9hrbed9S+FzjZHW5gY1TWCHA5ckwXZBadntCNs8kEqAWdrb9O7rxbCaA4lKTIWjDXZxflOcA=="
+	crossorigin=""></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js"></script>
+	<!--<script src="https://npmcdn.com/Chart.Zoom.js@latest/Chart.Zoom.min.js"></script>-->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/0.6.6/chartjs-plugin-zoom.min.js"></script>
+<style>
+
+ 	ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #FFC20A;
+}
+
+li {
+  float: left;
+}
+
+li a {
+  display: block;
+  color: white;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+li a:hover:not(.active) {
+  background-color: #4CAF50;
+}
+
+.active {
+  background-color: #4CAF50;
+}
+
+ul li ul.dropdown {
+    list-style: none;
+    display: none;
+    z-index: 1000;
+    padding: 0;
+    margin: 0;
+}
+
+ul li:hover ul.dropdown {
+	display: block;
+}
+
+ </style>
+</head>
+
+<!-- 
+	get the data from the db, iterate through it all put a marker for each spot with the current data, historical data will be displayed in a graph or something..? 
+
+	For historical data graphs: https://www.techrepublic.com/blog/five-apps/create-real-time-graphs-with-these-five-free-web-based-apps/
+	http://www.flotcharts.org/ -- jquery based graph plotting library
+-->
+
+<body>
+<ul>
+	<li><a href="index.html">EA Flood Warnings</a></li>
+	<li><a href="mqtt.html">MQTT</a></li>
+		<li><a class="active" id="mapDropdown" href="map.html">Map</a>
+			<ul class="dropdown">
+				<li><a href="map2.html">High Contrast</a></li>
+			</ul>
+		</li>
+	<li><a href="subscribe.html">Subscribe to alerts</a></li>
+	<li><a href="checkifonline.php">Check api status</a></li>
+
+	<div class="nav-right">
+		<li><a href="#">login</a></li>
+	</div>
+</ul>
+
+    <div id="mapid"; style="width: 1200px; height: 800px;"></div>
+<script>
+	
+	var map = L.map('mapid').setView([51.2802, 1.0789], 13); // 16 is (default?) zoom, ie. not important
+	L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
+	attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+	maxZoom: 20,
+	id: 'mapbox.streets'
+	}).addTo(map);
+	
+	var popup = L.popup();
+
+	function onMapClick2(e) {
+	popup
+	  .setLatLng(e.latlng)
+	  .setContent("You clicked the map at " + e.latlng.toString())
+	  .openOn(map);
+	}
+	map.on('click', onMapClick2);
+	
+	function popMap() {
+		var xhttp = new XMLHttpRequest();
+		xhttp.onreadystatechange = function() {
+			if (this.readyState == 4 && this.status == 200) {
+				var arr = this.responseText;
+				arr = arr.slice(0, -1); // remove the last char (was causing some janky stuff)
+				arr = arr.split(";");
+				
+				var marker;
+				var markerLayer = []; 
+				
+				for(var locations in arr) { // all sensor locations
+					var locationStr = arr[locations];
+					var locationsArr = locationStr.split(",");
+					var locationID;
+					var latitude;
+					var longitude;
+					for(var location in locationsArr) { // each individual sensor
+						if(locationsArr[location] === "") {  } else {
+							switch(location) {
+								case "0":
+									locationID = locationsArr[location]; // possibly useful later (for the historical values..)
+									break;
+								case "1":
+									latitude = locationsArr[location];
+									break;
+								case "2":
+									longitude = locationsArr[location];
+									break;
+								default:
+									alert("error in the switch case!");
+									break;
+							}
+						}
+					}
+					marker = new L.marker([latitude,longitude]).addTo(map);
+					// get the current water value for each station from mapData.php
+					var measure; // value of water level
+					var xhttpData = new XMLHttpRequest();
+					xhttpData.onreadystatechange = function() {
+						measure = this.responseText;
+						
+					};
+					xhttpData.open("GET", "mapData.php?id=" + locationID, false);
+					xhttpData.send();
+					/**
+					 *	Solution for links within leafletjs markers was found here: https://stackoverflow.com/a/13699060
+					 */
+					 // a href="#" class="link"
+					var link = $('<button type="button" id="' + locationID + '" class="btn btn-info btn-lg" data-toggle="modal" data-target="#myModal">test</a>').click(function() {
+						/**
+						 *	Get data from db put into a labels array and a data array -> graph done
+						 */
+						$("#graphCanvas").remove();
+						$("#graph").append('<canvas id="graphCanvas" width="400" height="400"></canvas>');
+						
+						var locationID = this.id;
+						var xhttpGraph = new XMLHttpRequest();
+						xhttpGraph.onreadystatechange = function() {
+							if (this.readyState == 4 && this.status == 200) {
+								var arr = this.responseText;
+								arr = arr.split(",");
+								var dateArr = [];
+								var dataArr = [];
+								/**
+								 *	blank spaces at end of array, hence -2
+								 */
+								for(var i = 0; i < arr.length-2; i += 2) {
+									//alert(i + " : " +arr[i]);
+									dataArr.push(arr[i]);
+								}
+								for(var i = 1; i < arr.length-2; i +=2) {
+									dateArr.push(arr[i]);
+								}
+								
+								var ctx = document.getElementById("graphCanvas").getContext('2d');
+								myChart = new Chart(ctx, {
+									type: 'line',
+									data: {
+										labels: dateArr, // change these to dates
+										datasets: [{
+											label: 'Water level',
+											data: dataArr, // change this to measurements
+											backgroundColor: [
+												'rgba(255, 99, 132, 0.2)',
+												'rgba(54, 162, 235, 0.2)',
+												'rgba(255, 206, 86, 0.2)',
+												'rgba(75, 192, 192, 0.2)',
+												'rgba(153, 102, 255, 0.2)',
+												'rgba(255, 159, 64, 0.2)'
+											],
+											borderColor: [
+												'rgba(255,99,132,1)',
+												'rgba(54, 162, 235, 1)',
+												'rgba(255, 206, 86, 1)',
+												'rgba(75, 192, 192, 1)',
+												'rgba(153, 102, 255, 1)',
+												'rgba(255, 159, 64, 1)'
+											],
+											borderWidth: 1
+										}]
+									},
+									options: {
+										scales: {
+											yAxes: [{
+												ticks: {
+													beginAtZero:true
+												}
+											}]
+										},
+										zoom: { // zoom seems to work in edge MUCH better than it does in chrome (but since we don't have the time to right a whole library...)
+											enabled: true,
+											mode: 'x',
+										}
+									},
+								});
+							}
+						};
+						xhttpGraph.open("GET", "graph.php?id=" + locationID, true);
+						xhttpGraph.send();
+					});
+					var div = $('<div/>').text("water level: " + measure + "\nHistorical Graph: ").append(link)[0];
+					marker.bindPopup(div);
+				}
+			}
+		};
+		xhttp.open("GET", "map.php", true); // true for async
+		xhttp.send();
+	}
+	window.onload = popMap;
+</script>
+
+<div class="modal fade" id="myModal" role "dialog">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="model-header">
+				<h4 class="modal-title">Graph</h4>
+				<!-- combo box here to select a day (check api for the .update() function on canvas (date+time maybe..?) -->
+			</div>
+			<div class="modal-body">
+				<div id="graph">
+					<canvas id="graphCanvas" width="400" height="400"></canvas> <!-- This is the canvas for the graph -->
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" id="graphDestroy" class="btn btn-default" data-dismiss="modal">Close</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+</body>
+
+</html>
